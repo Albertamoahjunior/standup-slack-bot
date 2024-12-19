@@ -1,5 +1,6 @@
 const schedule = require("node-schedule");
 const app = require("./appInstance");
+const databaseConnection = require("./db");
 
 // Fetch MongoDB collection
 const getStandupCollection = async () => {
