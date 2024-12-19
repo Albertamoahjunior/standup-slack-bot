@@ -24,17 +24,17 @@ const getStandupCollection = async () => {
   return db.collection('standupUpdates');
 };
 
-// Insert or update a standup report
+// Insert a new standup report
 const insertStandupUpdate = async (userId, update) => {
   try {
     const collection = await getStandupCollection();
     const timestamp = new Date().toISOString();
 
-    await collection.updateOne(
-      { userId },
-      { $set: { update, timestamp } },
-      { upsert: true }
-    );
+    await collection.insertOne({
+      userId,
+      update,
+      timestamp
+    });
     console.log(`Standup update for user ${userId} saved successfully.`);
   } catch (error) {
     console.error(`Error saving standup update for user ${userId}:`, error.message);
