@@ -29,13 +29,33 @@ const insertStandupUpdate = async (userId, update) => {
 };
 
 // Fetch all standup updates
-const fetchStandupUpdates = async () => {
+const fetchStandupUpdates = async (limit = 5, message) => {
   try {
     const collection = await getStandupCollection();
-    return await collection.find({}).toArray();
+
+    // counting the total documents in the collection
+    const totalCount = await collection.countDocuments({});
+
+    // fetched updates limited to 5 documents per call
+    const updates = await collection.find({}).limit(limit).toArray();
+
+    // checking if there are more documents in the collection
+    const hasMore = totalCount > limit;
+
+    // let remainder = totalCount;
+    // for (let i = 0; i <= totalCount; i++) {
+    //   if (message === "continue" && i < remainder) {
+    //     remainder -= limit;
+    //   }
+    //   return remainder;
+    // }
+
+    return { updates, hasMore };
+
+    // return await collection.find({}).limit(limit).toArray();
   } catch (error) {
     console.error("Error fetching standup updates:", error.message);
-    return [];
+    return { updates: [], hasMore: false };
   }
 };
 
@@ -61,7 +81,6 @@ const scheduleDailyReminder = async () => {
   const targetUsers = await fetchChannelMembers(process.env.SLACK_CHANNEL_ID);
 
   schedule.scheduleJob("0 9 * * *", async () => {
-    
     for (const userId of targetUsers) {
       try {
         await app.client.chat.postMessage({

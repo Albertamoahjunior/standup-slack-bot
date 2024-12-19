@@ -21,9 +21,17 @@ if (
 // Handle standup updates
 app.message(/standup:.+/i, async ({ message, say }) => {
   const userId = message.user;
-  const userUpdate = message.text.split("standup:")[1]?.trim();
+  const messageText = message.text.split("standup:")[1]?.trim();
+
+  // checking if the message contains the '-m' flag
+  const isMultiLine = messageText.startsWith("-m");
+
+  let userUpdate = isMultiLine
+    ? `[${messageText.slice(2).trim()}]`
+    : messageText;
 
   if (!userUpdate) {
+    console.log('"Please use the format: `standup: <your update>`."');
     await say("Please use the format: `standup: <your update>`.");
     return;
   }
@@ -37,14 +45,25 @@ app.message(/standup:.+/i, async ({ message, say }) => {
   }
 });
 
+app.message("continue", async ({ message, say }) => {
+  try {
+    console.log("continuing updates:");
+    const MoreUpdates = await fetchStandupUpdates(5,message);
+    await say(MoreUpdates);
+  } catch (error) {
+    console.error("Error fetching more updates");
+    await say("Failed to fetch more updates. Please try again.");
+  }
+});
+
 // Command: Show standup summary
 app.command("/standup-summary", async ({ command, ack, say }) => {
   await ack();
 
   try {
-    const updates = await fetchStandupUpdates();
+    const { updates, hasMore } = await fetchStandupUpdates();
     if (updates.length === 0) {
-      await say("No updates have been recorded yet.");
+      await say("No updates available");
       return;
     }
 
@@ -54,7 +73,12 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
 `;
     });
 
-    await say(summary);
+    if (hasMore) {
+      await say(summary);
+      await say("type 'continue' for more");
+    } else {
+      say("That's all");
+    }
   } catch (error) {
     console.error("Error fetching standup summary:", error.message);
     await say("Failed to fetch the standup summary. Please try again later.");
