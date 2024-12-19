@@ -1,5 +1,5 @@
 const { MongoClient, ServerApiVersion } = require('mongodb');
-require('dotenv').config(); // Ensure dotenv is configured to load environment variables
+require('dotenv').config(); 
 
 const uri = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@tech-titan.9arc1.mongodb.net/?retryWrites=true&w=majority&appName=tech-titan`;
 
@@ -24,7 +24,6 @@ const databaseConnection = async () => {
   return client.db('tech-titan');
 };
 
-// Graceful shutdown handling
 process.on('SIGINT', async () => {
   await client.close();
   console.log('MongoDB connection closed');
