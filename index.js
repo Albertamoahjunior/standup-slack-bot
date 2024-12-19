@@ -64,13 +64,13 @@ const fetchChannelMembers = async (channelId) => {
     console.error(`Error fetching members for channel ${channelId}:`, error.message);
     return [];
   }
-};
+}; 
 
 // Schedule daily reminders
 const scheduleDailyReminder = async () => {
   const targetUsers = await fetchChannelMembers(process.env.SLACK_CHANNEL_ID);
 
-  schedule.scheduleJob('0 9 * * *', async () => { // Run daily at 9:00 AM
+ schedule.scheduleJob('26 19 * * *', async () => { // Run daily at 9:00 AM
     for (const userId of targetUsers) {
       try {
         await app.client.chat.postMessage({
