@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "main.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "env": {
+      "SLACK_BOT_TOKEN": "xoxb-8198098386754-8210961972449-TDu57OcjbDlGAcoDvlvbVHoi",
+      "SLACK_SIGNING_SECRET": "992313eb7060766248cd79f4886afa86",
+      "SLACK_CHANNEL_ID": "C085U17SPV1"
+    }
+  }
+  
