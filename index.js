@@ -97,4 +97,12 @@ ${blockers.join("\n")}`);
   }
 })();
 
-module.exports = { app };
+
+//for the vercel hosting
+module.exports = async (req, res) => {
+  if (req.method === 'GET') {
+    res.status(200).send('Slack bot is running!');
+  } else {
+    res.status(405).send('Method Not Allowed');
+  }
+};
