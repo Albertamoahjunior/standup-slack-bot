@@ -89,6 +89,7 @@ const scheduleDailyReminder = async () => {
 app.message(/standup:.+/i, async ({ message, say }) => {
   const userId = message.user;
   const userUpdate = message.text.split('standup:')[1]?.trim();
+  console.log('standup word used')
 
   if (!userUpdate) {
     await say('Please use the format: `standup: <your update>`.');
@@ -162,12 +163,3 @@ ${blockers.join('\n')}`);
     console.error('Failed to start the app:', error.message);
   }
 })();
-
-//for the vercel hosting
-module.exports = async (req, res) => {
-  if (req.method === 'GET') {
-    res.status(200).send('Slack bot is running!');
-  } else {
-    res.status(405).send('Method Not Allowed');
-  }
-};
