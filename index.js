@@ -2,6 +2,7 @@
 const { App } = require('@slack/bolt');
 const dotenv = require('dotenv');
 const schedule = require('node-schedule');
+const databaseConnection = require('./db');
 
 // Load environment variables
 dotenv.config();
@@ -12,38 +13,62 @@ if (!process.env.SLACK_BOT_TOKEN || !process.env.SLACK_SIGNING_SECRET || !proces
 // Initialize the Slack app
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN, // Bot User OAuth Token
-  signingSecret: process.env.SLACK_SIGNING_SECRET // Signing Secret
+  signingSecret: process.env.SLACK_SIGNING_SECRET, // Signing Secret
+  socketMode: true, // Socket Mode
+  appToken: process.env.SLACK_APP_TOKEN, // App OAuth Token
 });
 
-// Storage for standup updates (in-memory; consider replacing with a database)
-const standupUpdates = {};
+// Fetch MongoDB collection
+const getStandupCollection = async () => {
+  const db = await databaseConnection();
+  return db.collection('standupUpdates');
+};
+
+// Insert or update a standup report
+const insertStandupUpdate = async (userId, update) => {
+  try {
+    const collection = await getStandupCollection();
+    const timestamp = new Date().toISOString();
+
+    await collection.updateOne(
+      { userId },
+      { $set: { update, timestamp } },
+      { upsert: true }
+    );
+    console.log(`Standup update for user ${userId} saved successfully.`);
+  } catch (error) {
+    console.error(`Error saving standup update for user ${userId}:`, error.message);
+  }
+};
+
+// Fetch all standup updates
+const fetchStandupUpdates = async () => {
+  try {
+    const collection = await getStandupCollection();
+    return await collection.find({}).toArray();
+  } catch (error) {
+    console.error('Error fetching standup updates:', error.message);
+    return [];
+  }
+};
 
 // Fetch members of a specific channel
 const fetchChannelMembers = async (channelId) => {
   try {
     const result = await app.client.conversations.members({
       token: process.env.SLACK_BOT_TOKEN,
-      channel: channelId, // ID of the specific channel
+      channel: channelId,
     });
-    return result.members; // Returns an array of user IDs
+    return result.members.filter(userId => userId !== 'USLACKBOT'); // Exclude bots
   } catch (error) {
     console.error(`Error fetching members for channel ${channelId}:`, error.message);
     return [];
   }
 };
 
-// Fetch users dynamically for a specific channel
-const fetchTargetUsersFromChannel = async () => {
-  const specificChannelId = process.env.SLACK_CHANNEL_ID; // Use a .env variable for the channel ID
-  const channelMembers = await fetchChannelMembers(specificChannelId);
-
-  // Filter out bots and the Slack system bot
-  return channelMembers.filter(userId => userId !== 'USLACKBOT');
-};
-
 // Schedule daily reminders
 const scheduleDailyReminder = async () => {
-  const targetUsers = await fetchTargetUsersFromChannel(); // Fetch members from the specific channel
+  const targetUsers = await fetchChannelMembers(process.env.SLACK_CHANNEL_ID);
 
   schedule.scheduleJob('0 9 * * *', async () => { // Run daily at 9:00 AM
     for (const userId of targetUsers) {
@@ -60,60 +85,76 @@ const scheduleDailyReminder = async () => {
   });
 };
 
-// Collect standup updates
+// Handle standup updates
 app.message(/standup:.+/i, async ({ message, say }) => {
-  if (!message.text.includes('standup:')) {
+  const userId = message.user;
+  const userUpdate = message.text.split('standup:')[1]?.trim();
+
+  if (!userUpdate) {
     await say('Please use the format: `standup: <your update>`.');
     return;
   }
 
-  const userId = message.user;
-  const userUpdate = message.text.split('standup:')[1].trim();
-
-  standupUpdates[userId] = {
-    update: userUpdate,
-    timestamp: new Date().toISOString()
-  };
-
-  await say(`<@${userId}>, your standup update has been recorded!`);
+  try {
+    await insertStandupUpdate(userId, userUpdate);
+    await say(`<@${userId}>, your standup update has been recorded!`);
+  } catch (error) {
+    console.error('Error saving standup update:', error.message);
+    await say('Failed to record your standup update. Please try again.');
+  }
 });
 
-// Show a summary of all updates
+// Command: Show standup summary
 app.command('/standup-summary', async ({ command, ack, say }) => {
   await ack();
 
-  if (Object.keys(standupUpdates).length === 0) {
-    await say('No updates have been recorded yet.');
-    return;
-  }
+  try {
+    const updates = await fetchStandupUpdates();
+    if (updates.length === 0) {
+      await say('No updates have been recorded yet.');
+      return;
+    }
 
-  let summary = '*Daily Standup Summary:*\n';
-  for (const [userId, { update }] of Object.entries(standupUpdates)) {
-    summary += `- <@${userId}>: ${update}\n`;
-  }
+    let summary = '*Daily Standup Summary:*';
+    updates.forEach(({ userId, update }) => {
+      summary += `- <@${userId}>: ${update}
+`;
+    });
 
-  await say(summary);
+    await say(summary);
+  } catch (error) {
+    console.error('Error fetching standup summary:', error.message);
+    await say('Failed to fetch the standup summary. Please try again later.');
+  }
 });
 
-// Aggregate and report blockers
+// Command: Show blockers
 app.command('/standup-blockers', async ({ command, ack, say }) => {
   await ack();
 
-  const blockers = Object.entries(standupUpdates)
-    .filter(([_, { update }]) => update.toLowerCase().includes('blocker'))
-    .map(([userId, { update }]) => `- <@${userId}>: ${update}`);
+  try {
+    const updates = await fetchStandupUpdates();
+    const blockers = updates
+      .filter(({ update }) => update.toLowerCase().includes('blocker'))
+      .map(({ userId, update }) => `- <@${userId}>: ${update}`);
 
-  if (blockers.length === 0) {
-    await say('No blockers have been reported.');
-    return;
+    if (blockers.length === 0) {
+      await say('No blockers have been reported.');
+      return;
+    }
+
+    await say(`*Blockers Reported:*
+${blockers.join('\n')}`);
+  } catch (error) {
+    console.error('Error fetching blockers:', error.message);
+    await say('Failed to fetch blockers. Please try again later.');
   }
-
-  await say(`*Blockers Reported:*\n${blockers.join('\n')}`);
 });
 
 // Start the app
 (async () => {
   try {
+    await databaseConnection();
     await app.start(process.env.PORT || 3000);
     console.log('⚡️ Slack bot is running!');
     scheduleDailyReminder();
