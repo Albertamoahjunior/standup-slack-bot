@@ -23,11 +23,13 @@ An automated Slack bot that helps teams manage their daily standups by sending r
 
 1. Clone the repository
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Create a `.env` file in the root directory with the following variables:
+
 ```env
 SLACK_BOT_TOKEN=xoxb-your-bot-token
 SLACK_SIGNING_SECRET=your-signing-secret
@@ -40,8 +42,11 @@ PORT=3000 # Optional, defaults to 3000
 ### Starting the Bot
 
 Run the following command to start the bot:
+
 ```bash
-node index.js
+npm start
+or
+npm run start
 ```
 
 ### Commands
@@ -49,6 +54,7 @@ node index.js
 The bot responds to the following commands and interactions:
 
 1. **Daily Reminders**
+
    - Bot automatically sends reminders at 9:00 AM to all channel members
    - Prompts users to share updates about:
      - Yesterday's work
@@ -56,7 +62,9 @@ The bot responds to the following commands and interactions:
      - Any blockers
 
 2. **Sharing Updates**
+
    - Users can share their standup update using the format:
+
    ```
    standup: Your update message here
    ```
@@ -67,6 +75,13 @@ The bot responds to the following commands and interactions:
 
 ## Technical Details
 
+1. Use flags for more efficiency, eg.the '-m' flag
+
+```bash
+standup:-m 1.Create multiline updates
+           2. Using the '-m' flag
+```
+
 ### Dependencies
 
 - `@slack/bolt`: Slack Bot framework
@@ -76,10 +91,12 @@ The bot responds to the following commands and interactions:
 ### Key Components
 
 1. **Channel Member Fetching**
+
    - Dynamically fetches members from specified channel
    - Filters out system bot users
 
 2. **Scheduling**
+
    - Uses node-schedule for daily 9 AM reminders
    - Configurable timing through code modification
 
@@ -90,6 +107,7 @@ The bot responds to the following commands and interactions:
 ## Error Handling
 
 The bot includes error handling for:
+
 - Missing environment variables
 - Failed message delivery
 - Channel member fetching errors
