@@ -8,6 +8,9 @@ const {
   fetchNextPage,
   fetchIndividualUpdates,
 } = require("./helpers");
+const { WebClient } = require("@slack/web-api");
+
+
 
 dotenv.config();
 if (
@@ -20,8 +23,29 @@ if (
   );
 }
 
-// //keep the page counter
-// const userPageTracker = {}
+//configure the webclient
+const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+let user_list = { };
+
+
+// Fetch all user IDs and usernames at startup
+const fetchUserList = async () => {
+  try {
+    console.log("Fetching Slack user list...");
+    const response = await slackClient.users.list();
+    if (response.ok) {
+      user_list = response;
+      console.log("Slack user list fetched successfully.");
+    } else {
+      console.error("Failed to fetch user list:", response.error);
+    }
+  } catch (error) {
+    console.error("Error fetching user list:", error.message);
+  }
+};
+
+
 
 // Handle standup updates
 app.message(/standup:.+/i, async ({ message, say }) => {
@@ -106,13 +130,14 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
 });
 
 
-// command for fetching update of a single user
 app.command("/standup-update", async ({ command, ack, say }) => {
   await ack();
 
-  const userId = command.text.trim().replace(/<@|>/g, "");
+  let username = command.text.trim().replace(/<@|>/g, "");
+  username = username.split("@")[1];
+  console.log(username);
 
-  if (!userId) {
+  if (!username) {
     await say(
       "Please mention a user to get their standup update, e.g., `/standup-update @username`."
     );
@@ -120,18 +145,32 @@ app.command("/standup-update", async ({ command, ack, say }) => {
   }
 
   try {
+    const user = user_list.members.find((member) => member.name === username);
+
+    if (!user) {
+      await say(`Could not find a user with the username: @${username}`);
+      return;
+    }
+
+    const userId = user.id;
+    console.log(userId)
     const update = await fetchIndividualUpdates(userId);
 
     if (update) {
-      await say(`Standup update for <@${userId}>: ${update}`);
+      // If `update` is an array, map over it to extract the `update` field.
+      const formattedUpdate = Array.isArray(update)
+      ? update.map((item, index) => ` ${item.update}`).join("\n")
+      : `Update: ${update.update}`; // If it's a single object, extract `update` field.
+
+      await say(`*Standup update for* <@${username}>:\n${formattedUpdate}`);
     } else {
-      await say(`No standup update found for <@${userId}>.`);
+      await say(`No standup update found for <@${username}>.`);
     }
   } catch (e) {
-    console.error("Error handling standup update command:", error);
+    console.error("Error handling standup update command:", e);
     await say("Failed to fetch the standup update. Please try again later.");
   }
-})
+});
 
 // Command: Show blockers
 app.command("/standup-blockers", async ({ command, ack, say }) => {
@@ -156,12 +195,10 @@ ${blockers.join("\n")}`);
   }
 });
 
-
-(
-
   // starting the app
-  async () => {
+  (async () => {
     try {
+      await fetchUserList();
       await databaseConnection();
       await app.start(process.env.PORT || 3000);
       console.log("⚡️ Slack bot is running!");

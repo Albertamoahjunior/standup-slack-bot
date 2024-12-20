@@ -60,11 +60,11 @@ const fetchStandupUpdates = async (limit = 5, page = 0) => {
 const fetchIndividualUpdates = async (userId) => {
   try {
     const collection = await getStandupCollection();
-    const updates = await collection.findOne({ userId: userId }).toArray();
+    const updates = await collection.find({ userId: userId }).toArray();
 
     return updates ? updates : null;
   } catch (e) {
-    console.error(`Error fetching user updates`, error);
+    console.log(`Error fetching user updates`, e);
     return [];
   }
 };
