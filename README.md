@@ -82,13 +82,13 @@ The bot responds to the following commands and interactions:
 ```bash
 - standup:-m 1.Create multiline updates \n using the -m flag
 
-- /standup-summary --sort to sort the updates
 ```
 
 2. Using pagingation:
 
 - By default the limit on the fetch for updates is 5
 - You can add your desired limit to return updates
+
 ```bash
 `/standup-summary --lm <value>`
 ```
