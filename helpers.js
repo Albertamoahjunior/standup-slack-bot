@@ -2,6 +2,9 @@ const schedule = require("node-schedule");
 const app = require("./appInstance");
 const databaseConnection = require("./db");
 
+//ser the page number
+let current_page = 0;
+
 // Fetch MongoDB collection
 const getStandupCollection = async () => {
   const db = await databaseConnection();
@@ -28,24 +31,38 @@ const insertStandupUpdate = async (userId, update) => {
   }
 };
 
-// Fetch all standup updates
-const fetchStandupUpdates = async (limit = 5, message) => {
+// Fetch standup updates with pagination
+const fetchStandupUpdates = async (limit = 5, page = 0) => {
   try {
+    if (limit <= 0 || page < 0) throw new Error("Invalid limit or page values.");
+    const maxLimit = 100;
+    limit = Math.min(limit, maxLimit);
+
     const collection = await getStandupCollection();
-
-    // counting the total documents in the collection
     const totalCount = await collection.countDocuments({});
+    const skip = page * limit;
 
-    // fetched updates limited to 5 documents per call
-    const updates = await collection.find({}).limit(limit).toArray();
+    const updates = await collection.find({})
+      .skip(skip)
+      .limit(limit)
+      .toArray();
 
-    // checking if there are more documents in the collection
-    const hasMore = totalCount > limit;
+    const hasMore = totalCount > skip + limit;
 
     return { updates, hasMore };
-
   } catch (error) {
-    console.error("Error fetching standup updates:", error.message);
+    console.error(`Error fetching updates (page: ${page}, limit: ${limit}):`, error.message);
+    return { updates: [], hasMore: false };
+  }
+};
+
+// Fetch the next page of updates (stateless)
+const fetchNextPage = async (limit = 5) => {
+  current_page += 1
+  try {
+    return await fetchStandupUpdates(limit, current_page);
+  } catch (error) {
+    console.error(`Error fetching next page (currentPage: ${currentPage}, limit: ${limit}):`, error.message);
     return { updates: [], hasMore: false };
   }
 };
@@ -92,4 +109,5 @@ module.exports = {
   fetchChannelMembers,
   insertStandupUpdate,
   getStandupCollection,
+  fetchNextPage,
 };

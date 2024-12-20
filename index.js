@@ -5,6 +5,7 @@ const {
   scheduleDailyReminder,
   fetchStandupUpdates,
   insertStandupUpdate,
+  fetchNextPage,
 } = require("./helpers");
 
 dotenv.config();
@@ -17,6 +18,9 @@ if (
     "Missing required environment variables: SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, or SLACK_CHANNEL_ID"
   );
 }
+
+// //keep the page counter
+// const userPageTracker = {}
 
 // Handle standup updates
 app.message(/standup:.+/i, async ({ message, say }) => {
@@ -47,14 +51,30 @@ app.message(/standup:.+/i, async ({ message, say }) => {
 
 app.message("continue", async ({ message, say }) => {
   try {
-    console.log("continuing updates:");
-    const MoreUpdates = await fetchStandupUpdates(5,message);
-    await say(MoreUpdates);
+    const { updates, hasMore } = await fetchNextPage();
+    if (updates.length === 0) {
+      await say("No more updates available.");
+      return;
+    }
+
+    let continuationMessage = "*More Updates:*";
+    updates.forEach(({ userId, update }) => {
+      continuationMessage += `\n- <@${userId}>: ${update}`;
+    });
+
+    if (hasMore) {
+      continuationMessage += "\nType 'continue' for more.";
+    } else {
+      continuationMessage += "\nEnd of Summary...";
+    }
+
+    await say(continuationMessage);
   } catch (error) {
-    console.error("Error fetching more updates");
+    console.error("Error fetching more updates:", error.message);
     await say("Failed to fetch more updates. Please try again.");
   }
 });
+
 
 // Command: Show standup summary
 app.command("/standup-summary", async ({ command, ack, say }) => {
@@ -77,7 +97,7 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
       await say(summary);
       await say("type 'continue' for more");
     } else {
-      say("That's all");
+      say("End of Summary...");
     }
   } catch (error) {
     console.error("Error fetching standup summary:", error.message);
