@@ -42,17 +42,8 @@ const fetchStandupUpdates = async (limit = 5, message) => {
     // checking if there are more documents in the collection
     const hasMore = totalCount > limit;
 
-    // let remainder = totalCount;
-    // for (let i = 0; i <= totalCount; i++) {
-    //   if (message === "continue" && i < remainder) {
-    //     remainder -= limit;
-    //   }
-    //   return remainder;
-    // }
-
     return { updates, hasMore };
 
-    // return await collection.find({}).limit(limit).toArray();
   } catch (error) {
     console.error("Error fetching standup updates:", error.message);
     return { updates: [], hasMore: false };
