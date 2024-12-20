@@ -78,24 +78,46 @@ const fetchIndividualUpdates = async (userId) => {
   }
 };
 
-//delete user updates
-const deleteIndividualUpdates = async (userId) => {
+const deleteIndividualUpdates = async (userId, appendedNumber = null) => {
   try {
     const collection = await getStandupCollection();
-    const deleteResult = await collection.deleteMany({ userId: userId }); // Delete all updates for the user
 
-    if (deleteResult.deletedCount > 0) {
-      console.log(`Successfully deleted ${deleteResult.deletedCount} updates for user: ${userId}`);
-    } else {
-      console.log(`No updates found for user: ${userId}`);
+    if ( appendedNumber === null) {
+      // Delete all updates for the user
+      const deleteResult = await collection.deleteMany({ userId });
+      console.log(`Deleted ${deleteResult.deletedCount} updates for user: ${userId}`);
+      return deleteResult;
     }
 
+    // Validate appendedNumber
+    if (typeof appendedNumber !== "number" || Number.isNaN(appendedNumber) || appendedNumber < 1) {
+      console.log(`Invalid appended number: ${appendedNumber}. Must be a positive integer.`);
+      return { deletedCount: 0 };
+    }
+
+    // Fetch updates to identify specific one
+    const updates = await collection.find({ userId }).toArray();
+    if (appendedNumber > updates.length) {
+      console.log(`Invalid appended number: ${appendedNumber}. User has only ${updates.length} updates.`);
+      return { deletedCount: 0 };
+    }
+
+    // Delete the specific update
+    const updateToDelete = updates[appendedNumber - 1];
+    if (!updateToDelete || !updateToDelete._id) {
+      console.log(`Update not found for appended number: ${appendedNumber}`);
+      return { deletedCount: 0 };
+    }
+
+    const deleteResult = await collection.deleteOne({ _id: updateToDelete._id });
+    console.log(`Deleted update with _id: ${updateToDelete._id} for user: ${userId}`);
     return deleteResult;
   } catch (e) {
-    console.error(`Error deleting user updates`, e);
+    console.error(`Error deleting updates for user ${userId}:`, e);
     return null;
   }
 };
+
 
 // Fetch the next page of updates (stateless)
 const fetchNextPage = async (limit = 5) => {

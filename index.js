@@ -221,19 +221,30 @@ app.command("/standup-reset", async ({ command, ack, say }) => {
     const userId = command.user_id; // Get the user ID of the person who issued the command
     console.log(userId);
 
-    const deleted = await deleteIndividualUpdates(userId);
-    
+    // Get the number from the appended command text
+    const commandText = command.text.trim(); 
+    let appendedNumber = parseInt(commandText, 10); 
+
+    if(isNaN(appendedNumber)) {
+      appendedNumber = null;
+    }
+
+    console.log("Appended number:", appendedNumber);
+
+    const deleted = await deleteIndividualUpdates(userId, appendedNumber); 
 
     if (deleted.deletedCount > 0) {
-      await say(`*Standup reset for*: - <@${userId}>`);
+      await say(`*Standup reset for*: - <@${userId}> with updates up to ${appendedNumber? appendedNumber: 'all'}`);
     } else {
-      await say(`*No standup updates to be resetted for*: - <@${userId}>.`);
+      await say(`*No standup updates to be reset for*: - <@${userId}>.`);
     }
+
   } catch (e) {
     console.error("Error handling standup reset command:", e);
     await say("Failed to reset the standup update. Please try again later.");
   }
 });
+
 
   // starting the app
   (async () => {
