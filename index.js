@@ -7,6 +7,7 @@ const {
   insertStandupUpdate,
   fetchNextPage,
   fetchIndividualUpdates,
+  deleteIndividualUpdates,
 } = require("./helpers");
 const { WebClient } = require("@slack/web-api");
 
@@ -157,6 +158,10 @@ app.command("/standup-update", async ({ command, ack, say }) => {
     const update = await fetchIndividualUpdates(userId);
 
     if (update) {
+      if(update.length < 1){
+        await say(`*No Standup update for* <@${username}>`);
+        return;
+      }
       // If `update` is an array, map over it to extract the `update` field.
       const formattedUpdate = Array.isArray(update)
       ? update.map((item, index) => ` ${item.update}`).join("\n")
@@ -192,6 +197,27 @@ ${blockers.join("\n")}`);
   } catch (error) {
     console.error("Error fetching blockers:", error.message);
     await say("Failed to fetch blockers. Please try again later.");
+  }
+});
+
+//reset ones update
+app.command("/standup-reset", async ({ command, ack, say }) => {
+  await ack();
+
+  try {
+    const userId = command.user_id; // Get the user ID of the person who issued the command
+    console.log(userId);
+
+    const deleted = await deleteIndividualUpdates(userId);
+
+    if (deleted) {
+      await say(`*Standup reset for* - <@${userId}`);
+    } else {
+      await say(`No standup updates to be resetted for <@${userId}>.`);
+    }
+  } catch (e) {
+    console.error("Error handling standup reset command:", e);
+    await say("Failed to reset the standup update. Please try again later.");
   }
 });
 
