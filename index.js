@@ -11,8 +11,6 @@ const {
 } = require("./helpers");
 const { WebClient } = require("@slack/web-api");
 
-
-
 dotenv.config();
 if (
   !process.env.SLACK_BOT_TOKEN ||
@@ -27,8 +25,7 @@ if (
 //configure the webclient
 const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
 
-let user_list = { };
-
+let user_list = {};
 
 // Fetch all user IDs and usernames at startup
 const fetchUserList = async () => {
@@ -45,8 +42,6 @@ const fetchUserList = async () => {
     console.error("Error fetching user list:", error.message);
   }
 };
-
-
 
 // Handle standup updates
 app.message(/standup:.+/i, async ({ message, say }) => {
@@ -78,7 +73,7 @@ app.message(/standup:.+/i, async ({ message, say }) => {
 
     console.log("userName:", userName);
 
-    await insertStandupUpdate(userId,userName, userUpdate);
+    await insertStandupUpdate(userId, userName, userUpdate);
     await say(`<@${userId}>, your standup update has been recorded!`);
   } catch (error) {
     console.error("Error saving standup update:", error.message);
@@ -119,7 +114,20 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
   try {
     const sortFlag = command.text.includes("--sort");
 
-    const { updates, hasMore } = await fetchStandupUpdates(sortFlag);
+    const limitNo = command.text.includes("--lm");
+
+    let limit = 5;
+
+    if (limitNo) {
+      limit = Number(command.text.split("--lm")[1]?.trim());
+      console.log("limitVal:", limit);
+      if (typeof limit !== "number") {
+        await say("The limit has to be a number");
+        return;
+      }
+    }
+
+    const { updates, hasMore } = await fetchStandupUpdates(sortFlag, limit);
     if (updates.length === 0) {
       await say("No updates available");
       return;
@@ -142,7 +150,6 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
     await say("Failed to fetch the standup summary. Please try again later.");
   }
 });
-
 
 app.command("/standup-update", async ({ command, ack, say }) => {
   await ack();
@@ -167,18 +174,18 @@ app.command("/standup-update", async ({ command, ack, say }) => {
     }
 
     const userId = user.id;
-    console.log(userId)
+    console.log(userId);
     const update = await fetchIndividualUpdates(userId);
 
     if (update) {
-      if(update.length < 1){
+      if (update.length < 1) {
         await say(`*No Standup update for* <@${username}>`);
         return;
       }
       // If `update` is an array, map over it to extract the `update` field.
       const formattedUpdate = Array.isArray(update)
-      ? update.map((item, index) => ` ${item.update}`).join("\n")
-      : `Update: ${update.update}`; // If it's a single object, extract `update` field.
+        ? update.map((item, index) => ` ${item.update}`).join("\n")
+        : `Update: ${update.update}`; // If it's a single object, extract `update` field.
 
       await say(`*Standup update for* <@${username}>:\n${formattedUpdate}`);
     } else {
@@ -235,19 +242,18 @@ app.command("/standup-reset", async ({ command, ack, say }) => {
   }
 });
 
-  // starting the app
-  (async () => {
-    try {
-      await fetchUserList();
-      await databaseConnection();
-      await app.start(process.env.PORT || 3000);
-      console.log("⚡️ Slack bot is running!");
-      scheduleDailyReminder();
-    } catch (error) {
-      console.error("Failed to start the app:", error.message);
-    }
+// starting the app
+(async () => {
+  try {
+    await fetchUserList();
+    await databaseConnection();
+    await app.start(process.env.PORT || 3000);
+    console.log("⚡️ Slack bot is running!");
+    scheduleDailyReminder();
+  } catch (error) {
+    console.error("Failed to start the app:", error.message);
   }
-)();
+})();
 
 //for the vercel hosting
 module.exports = async (req, res) => {
