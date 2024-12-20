@@ -67,7 +67,18 @@ app.message(/standup:.+/i, async ({ message, say }) => {
   }
 
   try {
-    await insertStandupUpdate(userId, userUpdate);
+    // fetching user profile to get name
+    const result = await app.client.users.profile.get({
+      token: process.env.SLACK_BOT_TOKEN,
+      user: userId,
+    });
+
+    const userName =
+      result.profile.display_name || result.profile.real_name || userId;
+
+    console.log("userName:", userName);
+
+    await insertStandupUpdate(userId,userName, userUpdate);
     await say(`<@${userId}>, your standup update has been recorded!`);
   } catch (error) {
     console.error("Error saving standup update:", error.message);
@@ -106,7 +117,9 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
   await ack();
 
   try {
-    const { updates, hasMore } = await fetchStandupUpdates();
+    const sortFlag = command.text.includes("--sort");
+
+    const { updates, hasMore } = await fetchStandupUpdates(sortFlag);
     if (updates.length === 0) {
       await say("No updates available");
       return;
@@ -114,13 +127,13 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
 
     let summary = "*Daily Standup Summary:*";
     updates.forEach(({ userId, update }) => {
-      summary += `- <@${userId}>: ${update}
-`;
+      summary += `- <@${userId}>: ${update}\n`;
     });
 
+    await say(summary);
+
     if (hasMore) {
-      await say(summary);
-      await say("type 'continue' for more");
+      await say("Type 'continue' for more");
     } else {
       say("End of Summary...");
     }
