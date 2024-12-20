@@ -6,6 +6,7 @@ const {
   fetchStandupUpdates,
   insertStandupUpdate,
   fetchNextPage,
+  fetchIndividualUpdates,
 } = require("./helpers");
 
 dotenv.config();
@@ -75,7 +76,6 @@ app.message("continue", async ({ message, say }) => {
   }
 });
 
-
 // Command: Show standup summary
 app.command("/standup-summary", async ({ command, ack, say }) => {
   await ack();
@@ -105,6 +105,34 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
   }
 });
 
+
+// command for fetching update of a single user
+app.command("/standup-update", async ({ command, ack, say }) => {
+  await ack();
+
+  const userId = command.text.trim().replace(/<@|>/g, "");
+
+  if (!userId) {
+    await say(
+      "Please mention a user to get their standup update, e.g., `/standup-update @username`."
+    );
+    return;
+  }
+
+  try {
+    const update = await fetchIndividualUpdates(userId);
+
+    if (update) {
+      await say(`Standup update for <@${userId}>: ${update}`);
+    } else {
+      await say(`No standup update found for <@${userId}>.`);
+    }
+  } catch (e) {
+    console.error("Error handling standup update command:", error);
+    await say("Failed to fetch the standup update. Please try again later.");
+  }
+})
+
 // Command: Show blockers
 app.command("/standup-blockers", async ({ command, ack, say }) => {
   await ack();
@@ -128,17 +156,21 @@ ${blockers.join("\n")}`);
   }
 });
 
-// starting the app
-(async () => {
-  try {
-    await databaseConnection();
-    await app.start(process.env.PORT || 3000);
-    console.log("⚡️ Slack bot is running!");
-    scheduleDailyReminder();
-  } catch (error) {
-    console.error("Failed to start the app:", error.message);
+
+(
+
+  // starting the app
+  async () => {
+    try {
+      await databaseConnection();
+      await app.start(process.env.PORT || 3000);
+      console.log("⚡️ Slack bot is running!");
+      scheduleDailyReminder();
+    } catch (error) {
+      console.error("Failed to start the app:", error.message);
+    }
   }
-})();
+)();
 
 //for the vercel hosting
 module.exports = async (req, res) => {

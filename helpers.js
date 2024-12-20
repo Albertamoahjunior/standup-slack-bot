@@ -57,6 +57,18 @@ const fetchStandupUpdates = async (limit = 5, page = 0) => {
   }
 };
 
+const fetchIndividualUpdates = async (userId) => {
+  try {
+    const collection = await getStandupCollection();
+    const updates = await collection.findOne({ userId: userId }).toArray();
+
+    return updates ? updates : null;
+  } catch (e) {
+    console.error(`Error fetching user updates`, error);
+    return [];
+  }
+};
+
 // Fetch the next page of updates (stateless)
 const fetchNextPage = async (limit = 5) => {
   current_page += 1;
@@ -107,6 +119,8 @@ const scheduleDailyReminder = async () => {
   });
 };
 
+//
+
 module.exports = {
   scheduleDailyReminder,
   fetchStandupUpdates,
@@ -114,4 +128,5 @@ module.exports = {
   insertStandupUpdate,
   getStandupCollection,
   fetchNextPage,
+  fetchIndividualUpdates,
 };
