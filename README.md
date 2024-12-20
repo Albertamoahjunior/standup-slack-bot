@@ -72,7 +72,7 @@ The bot responds to the following commands and interactions:
 3. **Viewing Summaries**
    - Use `/standup-summary` to see all updates for the day
    - Use `/standup-blockers` to see all reported blockers
-   - Use `/standup-update <@userNam>` to see updates for a particular user
+   - Use `/standup-update <@userName>` to see updates for a particular user
    - Use `/standup-reset` to reset only your updates
 
 ## Technical Details
@@ -80,10 +80,17 @@ The bot responds to the following commands and interactions:
 1. Use flags for more efficiency, eg.the '-m' flag
 
 ```bash
-- standup:-m 1.Create multiline updates
-- 2.Using the '-m' flag
+- standup:-m 1.Create multiline updates \n using the -m flag
 
 - /standup-summary --sort to sort the updates
+```
+
+2. Using pagingation:
+
+- By default the limit on the fetch for updates is 5
+- You can add your desired limit to return updates
+```bash
+`/standup-summary --lm <value>`
 ```
 
 ### Dependencies
@@ -91,6 +98,7 @@ The bot responds to the following commands and interactions:
 - `@slack/bolt`: Slack Bot framework
 - `dotenv`: Environment variable management
 - `node-schedule`: Task scheduling
+- `mongodb`: creating database instance
 
 ### Key Components
 
@@ -105,8 +113,7 @@ The bot responds to the following commands and interactions:
    - Configurable timing through code modification
 
 3. **Data Storage**
-   - Currently uses in-memory storage
-   - Can be extended to use a database
+   - Uses Mongodb to store updates
 
 ## Error Handling
 
@@ -119,11 +126,10 @@ The bot includes error handling for:
 
 ## Future Improvements
 
-1. Implement persistent storage using a database
-2. Add configurable reminder times
-3. Support for multiple channels
-4. Custom reminder messages
-5. Weekly/monthly summary reports
+1. Add configurable reminder times
+2. Support for multiple channels
+3. Custom reminder messages
+4. Weekly/monthly summary reports
 
 ## Contributing
 
@@ -131,4 +137,4 @@ Feel free to submit issues and pull requests for new features or improvements.
 
 ## License
 
-MIT License
+ISC License
