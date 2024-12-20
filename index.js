@@ -222,11 +222,12 @@ app.command("/standup-reset", async ({ command, ack, say }) => {
     console.log(userId);
 
     const deleted = await deleteIndividualUpdates(userId);
+    
 
-    if (deleted) {
-      await say(`*Standup reset for* - <@${userId}`);
+    if (deleted.deletedCount > 0) {
+      await say(`*Standup reset for*: - <@${userId}>`);
     } else {
-      await say(`No standup updates to be resetted for <@${userId}>.`);
+      await say(`*No standup updates to be resetted for*: - <@${userId}>.`);
     }
   } catch (e) {
     console.error("Error handling standup reset command:", e);
