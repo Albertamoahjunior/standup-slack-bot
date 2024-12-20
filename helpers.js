@@ -34,7 +34,8 @@ const insertStandupUpdate = async (userId, update) => {
 // Fetch standup updates with pagination
 const fetchStandupUpdates = async (limit = 5, page = 0) => {
   try {
-    if (limit <= 0 || page < 0) throw new Error("Invalid limit or page values.");
+    if (limit <= 0 || page < 0)
+      throw new Error("Invalid limit or page values.");
     const maxLimit = 100;
     limit = Math.min(limit, maxLimit);
 
@@ -42,27 +43,30 @@ const fetchStandupUpdates = async (limit = 5, page = 0) => {
     const totalCount = await collection.countDocuments({});
     const skip = page * limit;
 
-    const updates = await collection.find({})
-      .skip(skip)
-      .limit(limit)
-      .toArray();
+    const updates = await collection.find({}).skip(skip).limit(limit).toArray();
 
     const hasMore = totalCount > skip + limit;
 
     return { updates, hasMore };
   } catch (error) {
-    console.error(`Error fetching updates (page: ${page}, limit: ${limit}):`, error.message);
+    console.error(
+      `Error fetching updates (page: ${page}, limit: ${limit}):`,
+      error.message
+    );
     return { updates: [], hasMore: false };
   }
 };
 
 // Fetch the next page of updates (stateless)
 const fetchNextPage = async (limit = 5) => {
-  current_page += 1
+  current_page += 1;
   try {
     return await fetchStandupUpdates(limit, current_page);
   } catch (error) {
-    console.error(`Error fetching next page (currentPage: ${currentPage}, limit: ${limit}):`, error.message);
+    console.error(
+      `Error fetching next page (currentPage: ${current_page}, limit: ${limit}):`,
+      error.message
+    );
     return { updates: [], hasMore: false };
   }
 };
