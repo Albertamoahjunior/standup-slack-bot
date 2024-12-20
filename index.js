@@ -112,8 +112,6 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
   await ack();
 
   try {
-    const sortFlag = command.text.includes("--sort");
-
     const limitNo = command.text.includes("--lm");
 
     let limit = 5;
@@ -127,7 +125,7 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
       }
     }
 
-    const { updates, hasMore } = await fetchStandupUpdates(sortFlag, limit);
+    const { updates, hasMore } = await fetchStandupUpdates(limit);
     if (updates.length === 0) {
       await say("No updates available");
       return;

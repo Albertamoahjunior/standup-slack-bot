@@ -33,7 +33,7 @@ const insertStandupUpdate = async (userId, userName, update) => {
 };
 
 // Fetch standup updates with pagination
-const fetchStandupUpdates = async (sort = false, limit = 5, page = 0) => {
+const fetchStandupUpdates = async (limit = 5, page = 0) => {
   try {
     if (limit <= 0 || page < 0)
       throw new Error("Invalid limit or page values.");
@@ -44,14 +44,7 @@ const fetchStandupUpdates = async (sort = false, limit = 5, page = 0) => {
     const totalCount = await collection.countDocuments({});
     const skip = page * limit;
 
-    let updatesQuery = collection.find({}).skip(skip).limit(limit);
-
-    if (sort) {
-      updatesQuery = updatesQuery.sort({ userName: 1 });
-    }
-
-    const updates = await updatesQuery.toArray();
-    
+    const updates = await collection.find({}).skip(skip).limit(limit).toArray();
 
     const hasMore = totalCount > skip + limit;
 
@@ -82,23 +75,33 @@ const deleteIndividualUpdates = async (userId, appendedNumber = null) => {
   try {
     const collection = await getStandupCollection();
 
-    if ( appendedNumber === null) {
+    if (appendedNumber === null) {
       // Delete all updates for the user
       const deleteResult = await collection.deleteMany({ userId });
-      console.log(`Deleted ${deleteResult.deletedCount} updates for user: ${userId}`);
+      console.log(
+        `Deleted ${deleteResult.deletedCount} updates for user: ${userId}`
+      );
       return deleteResult;
     }
 
     // Validate appendedNumber
-    if (typeof appendedNumber !== "number" || Number.isNaN(appendedNumber) || appendedNumber < 1) {
-      console.log(`Invalid appended number: ${appendedNumber}. Must be a positive integer.`);
+    if (
+      typeof appendedNumber !== "number" ||
+      Number.isNaN(appendedNumber) ||
+      appendedNumber < 1
+    ) {
+      console.log(
+        `Invalid appended number: ${appendedNumber}. Must be a positive integer.`
+      );
       return { deletedCount: 0 };
     }
 
     // Fetch updates to identify specific one
     const updates = await collection.find({ userId }).toArray();
     if (appendedNumber > updates.length) {
-      console.log(`Invalid appended number: ${appendedNumber}. User has only ${updates.length} updates.`);
+      console.log(
+        `Invalid appended number: ${appendedNumber}. User has only ${updates.length} updates.`
+      );
       return { deletedCount: 0 };
     }
 
@@ -109,15 +112,18 @@ const deleteIndividualUpdates = async (userId, appendedNumber = null) => {
       return { deletedCount: 0 };
     }
 
-    const deleteResult = await collection.deleteOne({ _id: updateToDelete._id });
-    console.log(`Deleted update with _id: ${updateToDelete._id} for user: ${userId}`);
+    const deleteResult = await collection.deleteOne({
+      _id: updateToDelete._id,
+    });
+    console.log(
+      `Deleted update with _id: ${updateToDelete._id} for user: ${userId}`
+    );
     return deleteResult;
   } catch (e) {
     console.error(`Error deleting updates for user ${userId}:`, e);
     return null;
   }
 };
-
 
 // Fetch the next page of updates (stateless)
 const fetchNextPage = async (limit = 5) => {
