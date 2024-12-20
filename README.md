@@ -80,7 +80,7 @@ The bot responds to the following commands and interactions:
 1. Use flags for more efficiency, eg.the '-m' flag
 
 ```bash
-- standup:-m 1.Create multiline updates \n using the '-m' flag
+- standup:-m 1.Create multiline updates \n using the -m flag
 
 - /standup-summary --sort to sort the updates
 ```
