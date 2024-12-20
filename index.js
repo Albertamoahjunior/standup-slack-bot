@@ -42,7 +42,18 @@ app.message(/standup:.+/i, async ({ message, say }) => {
   }
 
   try {
-    await insertStandupUpdate(userId, userUpdate);
+    // fetching user profile to get name
+    const result = await app.client.users.profile.get({
+      token: process.env.SLACK_BOT_TOKEN,
+      user: userId,
+    });
+
+    const userName =
+      result.profile.display_name || result.profile.real_name || userId;
+
+    console.log("userName:", userName);
+
+    await insertStandupUpdate(userId,userName, userUpdate);
     await say(`<@${userId}>, your standup update has been recorded!`);
   } catch (error) {
     console.error("Error saving standup update:", error.message);
@@ -81,7 +92,9 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
   await ack();
 
   try {
-    const { updates, hasMore } = await fetchStandupUpdates();
+    const sortFlag = command.text.includes("--sort");
+
+    const { updates, hasMore } = await fetchStandupUpdates(sortFlag);
     if (updates.length === 0) {
       await say("No updates available");
       return;
@@ -89,13 +102,13 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
 
     let summary = "*Daily Standup Summary:*";
     updates.forEach(({ userId, update }) => {
-      summary += `- <@${userId}>: ${update}
-`;
+      summary += `- <@${userId}>: ${update}`;
     });
 
+    await say(summary);
+
     if (hasMore) {
-      await say(summary);
-      await say("type 'continue' for more");
+      await say("Type 'continue' for more");
     } else {
       say("End of Summary...");
     }
@@ -104,7 +117,6 @@ app.command("/standup-summary", async ({ command, ack, say }) => {
     await say("Failed to fetch the standup summary. Please try again later.");
   }
 });
-
 
 // command for fetching update of a single user
 app.command("/standup-update", async ({ command, ack, say }) => {
@@ -131,7 +143,7 @@ app.command("/standup-update", async ({ command, ack, say }) => {
     console.error("Error handling standup update command:", error);
     await say("Failed to fetch the standup update. Please try again later.");
   }
-})
+});
 
 // Command: Show blockers
 app.command("/standup-blockers", async ({ command, ack, say }) => {
@@ -156,21 +168,17 @@ ${blockers.join("\n")}`);
   }
 });
 
-
-(
-
-  // starting the app
-  async () => {
-    try {
-      await databaseConnection();
-      await app.start(process.env.PORT || 3000);
-      console.log("⚡️ Slack bot is running!");
-      scheduleDailyReminder();
-    } catch (error) {
-      console.error("Failed to start the app:", error.message);
-    }
+// starting the app
+(async () => {
+  try {
+    await databaseConnection();
+    await app.start(process.env.PORT || 3000);
+    console.log("⚡️ Slack bot is running!");
+    scheduleDailyReminder();
+  } catch (error) {
+    console.error("Failed to start the app:", error.message);
   }
-)();
+})();
 
 //for the vercel hosting
 module.exports = async (req, res) => {

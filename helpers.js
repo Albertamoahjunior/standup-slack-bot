@@ -12,13 +12,14 @@ const getStandupCollection = async () => {
 };
 
 // Insert a new standup report
-const insertStandupUpdate = async (userId, update) => {
+const insertStandupUpdate = async (userId, userName, update) => {
   try {
     const collection = await getStandupCollection();
     const timestamp = new Date().toISOString();
 
     await collection.insertOne({
       userId,
+      userName,
       update,
       timestamp,
     });
@@ -32,7 +33,7 @@ const insertStandupUpdate = async (userId, update) => {
 };
 
 // Fetch standup updates with pagination
-const fetchStandupUpdates = async (limit = 5, page = 0) => {
+const fetchStandupUpdates = async (sort = false, limit = 5, page = 0) => {
   try {
     if (limit <= 0 || page < 0)
       throw new Error("Invalid limit or page values.");
@@ -43,7 +44,14 @@ const fetchStandupUpdates = async (limit = 5, page = 0) => {
     const totalCount = await collection.countDocuments({});
     const skip = page * limit;
 
-    const updates = await collection.find({}).skip(skip).limit(limit).toArray();
+    let updatesQuery = collection.find({}).skip(skip).limit(limit);
+
+    if (sort) {
+      updatesQuery = updatesQuery.sort({ userName: 1 });
+      return updatesQuery
+    }
+
+    const updates = await updatesQuery.toArray();
 
     const hasMore = totalCount > skip + limit;
 
