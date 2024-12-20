@@ -48,10 +48,10 @@ const fetchStandupUpdates = async (sort = false, limit = 5, page = 0) => {
 
     if (sort) {
       updatesQuery = updatesQuery.sort({ userName: 1 });
-      return updatesQuery
     }
 
     const updates = await updatesQuery.toArray();
+    
 
     const hasMore = totalCount > skip + limit;
 
@@ -65,15 +65,35 @@ const fetchStandupUpdates = async (sort = false, limit = 5, page = 0) => {
   }
 };
 
+//fetch individual updates
 const fetchIndividualUpdates = async (userId) => {
   try {
     const collection = await getStandupCollection();
-    const updates = await collection.findOne({ userId: userId }).toArray();
+    const updates = await collection.find({ userId: userId }).toArray();
 
     return updates ? updates : null;
   } catch (e) {
-    console.error(`Error fetching user updates`, error);
+    console.log(`fetching user updates: ${e}`);
     return [];
+  }
+};
+
+//delete user updates
+const deleteIndividualUpdates = async (userId) => {
+  try {
+    const collection = await getStandupCollection();
+    const deleteResult = await collection.deleteMany({ userId: userId }); // Delete all updates for the user
+
+    if (deleteResult.deletedCount > 0) {
+      console.log(`Successfully deleted ${deleteResult.deletedCount} updates for user: ${userId}`);
+    } else {
+      console.log(`No updates found for user: ${userId}`);
+    }
+
+    return deleteResult;
+  } catch (e) {
+    console.error(`Error deleting user updates`, e);
+    return null;
   }
 };
 
@@ -137,4 +157,5 @@ module.exports = {
   getStandupCollection,
   fetchNextPage,
   fetchIndividualUpdates,
+  deleteIndividualUpdates,
 };

@@ -72,14 +72,18 @@ The bot responds to the following commands and interactions:
 3. **Viewing Summaries**
    - Use `/standup-summary` to see all updates for the day
    - Use `/standup-blockers` to see all reported blockers
+   - Use `/standup-update <@userNam>` to see updates for a particular user
+   - Use `/standup-reset` to reset only your updates
 
 ## Technical Details
 
 1. Use flags for more efficiency, eg.the '-m' flag
 
 ```bash
-standup:-m 1.Create multiline updates
-           2. Using the '-m' flag
+- standup:-m 1.Create multiline updates
+- 2.Using the '-m' flag
+
+- /standup-summary --sort to sort the updates
 ```
 
 ### Dependencies
