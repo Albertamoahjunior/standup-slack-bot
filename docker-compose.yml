@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  slackbot:
+    build:
+      context: .
+    container_name: slackbot-container
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: always

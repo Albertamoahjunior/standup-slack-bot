@@ -200,18 +200,24 @@ app.command("/standup-blockers", async ({ command, ack, say }) => {
   await ack();
 
   try {
-    const updates = await fetchStandupUpdates();
+    const {updates} = await fetchStandupUpdates();
+  
+    // Ensure updates is an array
+    if (!Array.isArray(updates)) {
+      throw new Error('Expected updates to be an array');
+    }
+  
     const blockers = updates
       .filter(({ update }) => update.toLowerCase().includes("blocker"))
       .map(({ userId, update }) => `- <@${userId}>: ${update}`);
-
+  
     if (blockers.length === 0) {
       await say("No blockers have been reported.");
       return;
     }
-
+  
     await say(`*Blockers Reported:*
-${blockers.join("\n")}`);
+  ${blockers.join("\n")}`);
   } catch (error) {
     console.error("Error fetching blockers:", error.message);
     await say("Failed to fetch blockers. Please try again later.");
