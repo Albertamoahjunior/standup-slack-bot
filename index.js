@@ -267,7 +267,7 @@ app.command("/standup-reset", async ({ command, ack, say }) => {
 //for the vercel hosting
 module.exports = async (req, res) => {
   if (req.method === "GET") {
-    res.status(200).send("Slack bot is running!");
+    res.status(200).json({message: 'slackbot running', data: process.env.SLACK_BOT_TOKEN});
   } else {
     res.status(405).send("Method Not Allowed");
   }
